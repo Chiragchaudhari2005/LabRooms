@@ -970,75 +970,7 @@ useEffect(() => {
                             </div>
 
                             {/* Room Files Section */}
-                            <div className="flex-1 overflow-hidden flex flex-col">
-                              <div className="p-4 border-b border-gray-700">
-                                <h3 className="text-lg font-medium text-gray-100">Room Files</h3>
-                              </div>
-                              <div className="flex-1 overflow-y-auto p-4">
-                                {roomFiles.length === 0 ? (
-                                  <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                                    <svg className="w-16 h-16 mb-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                    </svg>
-                                    <p className="text-gray-400">No files in this room yet</p>
-                                    <p className="text-sm text-gray-500 mt-1">Upload your first file to get started</p>
-                                  </div>
-                                ) : (
-                                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {roomFiles.map((file) => (
-                                      <div key={file._id} className="bg-gray-800 rounded-lg overflow-hidden border border-gray-700 hover:border-blue-500 transition-colors">
-                                        <div className="p-4">
-                                          <div className="flex items-start space-x-3">
-                                            <div className="p-2 bg-blue-900/30 rounded-lg">
-                                              <FileIcon mimeType={file.mimeType} />
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                              <p className="text-sm font-medium text-gray-200 truncate">{file.filename}</p>
-                                              <div className="flex items-center text-xs text-gray-400 mt-1">
-                                                <span>{formatFileSize(file.size)}</span>
-                                                <span className="mx-2">•</span>
-                                                <span>{new Date(file.createdAt).toLocaleDateString()}</span>
-                                              </div>
-                                              <div className="mt-1">
-                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-700 text-gray-300">
-                                                  {file.uploader?.name || 'Unknown'}
-                                                </span>
-                                              </div>
-                                            </div>
-                                          </div>
-                                        </div>
-                                        <div className="bg-gray-700/50 px-4 py-2 flex justify-end space-x-2">
-                                          <a
-                                            href={file.url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                                            onClick={(e) => e.stopPropagation()}
-                                          >
-                                            <svg className="-ml-0.5 mr-1.5 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                            </svg>
-                                            Download
-                                          </a>
-                                          {/* Add View button for code files */}
-                                          {file.mimeType.startsWith('text/') && (
-                                            <button
-                                              className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
-                                              onClick={async (e) => {
-                                                e.preventDefault();
-                                                await fetchFileContent(file);
-                                              }}
-                                            >
-                                              View
-                                            </button>
-                                          )}
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
+                            
                           </div>
                         )}
 
