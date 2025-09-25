@@ -873,7 +873,7 @@ useEffect(() => {
                           </div>
                         )} */}
 
-                        // Inside LabRoom.tsx render method
+                        {/* // Inside LabRoom.tsx render method */}
                         {activeSection === 'whiteboard' && (
                           <Whiteboard
                             key={`${showChatPanel}-${showTeamPanel}-${showFilePanel}`} // <-- ADD THIS KEY
