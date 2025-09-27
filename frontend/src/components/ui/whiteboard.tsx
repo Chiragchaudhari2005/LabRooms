@@ -187,6 +187,7 @@ const Whiteboard: React.FC<WhiteboardProps> = ({ roomId, isDarkTheme = true, use
   };
 
   // Update startDrawing to accept both MouseEvent and TouchEvent
+  // Update startDrawing to accept both MouseEvent and TouchEvent
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     // Prevent scrolling on mobile when touching the canvas
     if ('touches' in e) {
@@ -195,6 +196,16 @@ const Whiteboard: React.FC<WhiteboardProps> = ({ roomId, isDarkTheme = true, use
 
     const coords = getCoords(e);
     if (!coords) return;
+
+    // --- ADDED LOGIC HERE ---
+    // 1. Save current state for undo
+    if (canvasRef.current) {
+      setUndoStack(prev => [...prev, canvasRef.current!.toDataURL()]);
+      setRedoStack([]);
+    }
+    // 2. Mark the beginning of a new stroke
+    isFirstDrawOfStroke.current = true;
+    // ------------------------
 
     setIsDrawing(true);
     prevPosRef.current = { x: coords.offsetX, y: coords.offsetY };
@@ -274,17 +285,30 @@ const Whiteboard: React.FC<WhiteboardProps> = ({ roomId, isDarkTheme = true, use
         y1: coords.offsetY,
         color: color,
         lineWidth: lineWidth,
+        // --- ADDED/MODIFIED LOGIC HERE ---
+        userName: userName,
+        isNewStroke: isFirstDrawOfStroke.current,
+        // --------------------------------
       };
 
       // 1. Draw on the local canvas immediately
       drawLine(ctx, drawData.x0, drawData.y0, drawData.x1, drawData.y1, drawData.color, drawData.lineWidth);
 
-      // 2. Emit the drawing event
+      // 2. Show label locally for the user's own stroke if it's new
+      if (isFirstDrawOfStroke.current) {
+        setLabels(prev => [
+          ...prev,
+          { x: drawData.x0, y: drawData.y0, userName, timestamp: Date.now() }
+        ]);
+        isFirstDrawOfStroke.current = false;
+      }
+
+      // 3. Emit the drawing event to the server to be broadcasted to others
       if (socketRef.current) {
         socketRef.current.emit('drawing', drawData);
       }
 
-      // 3. Update the previous position
+      // 4. Update the previous position
       prevPosRef.current = { x: coords.offsetX, y: coords.offsetY };
     }
   };
