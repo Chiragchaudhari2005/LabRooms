@@ -36,10 +36,10 @@ const Whiteboard: React.FC<WhiteboardProps> = ({ roomId, isDarkTheme = true, use
   const [color, setColor] = useState('#ffffff'); // Default color is white
   const [lineWidth, setLineWidth] = useState(5);  // Default line width
   const [labels, setLabels] = useState<Label[]>([]);
-  
+
   // Use a ref to store the socket instance so it persists across re-renders
   const socketRef = useRef<Socket | null>(null);
-  
+
   // Ref to store the previous drawing position for a continuous line
   const prevPosRef = useRef<{ x: number, y: number } | null>(null);
   const isFirstDrawOfStroke = useRef(true);
@@ -47,29 +47,29 @@ const Whiteboard: React.FC<WhiteboardProps> = ({ roomId, isDarkTheme = true, use
   // Undo/Redo stacks
   const [undoStack, setUndoStack] = useState<string[]>([]);
   const [redoStack, setRedoStack] = useState<string[]>([]);
-  
+
   // Theme-based styling (recalculate on every render)
   const themeClasses = useMemo(() => ({
-    container: isDarkTheme 
-      ? 'bg-gray-800 border-gray-700' 
+    container: isDarkTheme
+      ? 'bg-gray-800 border-gray-700'
       : 'bg-gray-200 border-gray-300',
-    toolbar: isDarkTheme 
-      ? 'bg-gray-900' 
+    toolbar: isDarkTheme
+      ? 'bg-gray-900'
       : 'bg-gray-100',
-    canvas: isDarkTheme 
-      ? 'bg-gray-700' 
+    canvas: isDarkTheme
+      ? 'bg-gray-700'
       : 'bg-white',
-    text: isDarkTheme 
-      ? 'text-white' 
+    text: isDarkTheme
+      ? 'text-white'
       : 'text-gray-900',
-    button: isDarkTheme 
-      ? 'bg-gray-700 hover:bg-gray-600' 
+    button: isDarkTheme
+      ? 'bg-gray-700 hover:bg-gray-600'
       : 'bg-gray-300 hover:bg-gray-400',
-    buttonActive: isDarkTheme 
-      ? 'bg-blue-600' 
+    buttonActive: isDarkTheme
+      ? 'bg-blue-600'
       : 'bg-blue-500',
-    ringOffset: isDarkTheme 
-      ? 'ring-offset-gray-900' 
+    ringOffset: isDarkTheme
+      ? 'ring-offset-gray-900'
       : 'ring-offset-gray-100'
   }), [isDarkTheme]);
 
@@ -88,14 +88,14 @@ const Whiteboard: React.FC<WhiteboardProps> = ({ roomId, isDarkTheme = true, use
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    
+
     // Function to set canvas dimensions based on its container
     const setCanvasDimensions = () => {
-        const parent = canvas.parentElement;
-        if (parent) {
-            canvas.width = parent.clientWidth;
-            canvas.height = parent.clientHeight;
-        }
+      const parent = canvas.parentElement;
+      if (parent) {
+        canvas.width = parent.clientWidth;
+        canvas.height = parent.clientHeight;
+      }
     };
     setCanvasDimensions();
     window.addEventListener('resize', setCanvasDimensions);
@@ -165,66 +165,151 @@ const Whiteboard: React.FC<WhiteboardProps> = ({ roomId, isDarkTheme = true, use
     context.closePath();
   };
 
-  // Event handler for when the mouse button is pressed down
-  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    // Save current state for undo
-    if (canvasRef.current) {
-      setUndoStack(prev => [...prev, canvasRef.current!.toDataURL()]);
-      setRedoStack([]);
+  // Helper function to get the correct coordinates (Mouse or Touch)
+  const getCoords = (event: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+
+    if ('touches' in event) { // It's a touch event
+      const rect = canvas.getBoundingClientRect();
+      const touch = event.touches[0];
+      // Calculate offset relative to the canvas
+      return {
+        offsetX: touch.clientX - rect.left,
+        offsetY: touch.clientY - rect.top,
+      };
+    } else { // It's a mouse event
+      return {
+        offsetX: event.nativeEvent.offsetX,
+        offsetY: event.nativeEvent.offsetY,
+      };
     }
-    const { offsetX, offsetY } = e.nativeEvent;
-    setIsDrawing(true);
-    prevPosRef.current = { x: offsetX, y: offsetY };
-    isFirstDrawOfStroke.current = true;
   };
 
-  // Event handler for when the mouse moves
-  const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  // Update startDrawing to accept both MouseEvent and TouchEvent
+  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    // Prevent scrolling on mobile when touching the canvas
+    if ('touches' in e) {
+      e.preventDefault();
+    }
+
+    const coords = getCoords(e);
+    if (!coords) return;
+
+    setIsDrawing(true);
+    prevPosRef.current = { x: coords.offsetX, y: coords.offsetY };
+  };
+
+  // // Event handler for when the mouse button is pressed down
+  // const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  //   // Save current state for undo
+  //   if (canvasRef.current) {
+  //     setUndoStack(prev => [...prev, canvasRef.current!.toDataURL()]);
+  //     setRedoStack([]);
+  //   }
+  //   const { offsetX, offsetY } = e.nativeEvent;
+  //   setIsDrawing(true);
+  //   prevPosRef.current = { x: offsetX, y: offsetY };
+  //   isFirstDrawOfStroke.current = true;
+  // };
+
+  // // Event handler for when the mouse moves
+  // const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  //   if (!isDrawing) return;
+  //   const { offsetX, offsetY } = e.nativeEvent;
+  //   const canvas = canvasRef.current;
+  //   const ctx = canvas?.getContext('2d');
+  //   if (ctx && prevPosRef.current) {
+  //     const drawData: DrawData = {
+  //       x0: prevPosRef.current.x,
+  //       y0: prevPosRef.current.y,
+  //       x1: offsetX,
+  //       y1: offsetY,
+  //       color: color,
+  //       lineWidth: lineWidth,
+  //       userName,
+  //       isNewStroke: isFirstDrawOfStroke.current,
+  //     };
+
+  //     drawLine(ctx, drawData.x0, drawData.y0, drawData.x1, drawData.y1, drawData.color, drawData.lineWidth);
+
+  //     // Show label locally for the user's own stroke
+  //     if (isFirstDrawOfStroke.current) {
+  //       setLabels(prev => [
+  //         ...prev,
+  //         { x: drawData.x0, y: drawData.y0, userName, timestamp: Date.now() }
+  //       ]);
+  //       isFirstDrawOfStroke.current = false;
+  //     }
+
+  //     // Emit the drawing event to the server to be broadcasted to others
+  //     if (socketRef.current) {
+  //       socketRef.current.emit('drawing', drawData);
+  //     }
+
+  //     prevPosRef.current = { x: offsetX, y: offsetY };
+  //   }
+  // };
+
+  // Update draw to accept both MouseEvent and TouchEvent
+  const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     if (!isDrawing) return;
-    const { offsetX, offsetY } = e.nativeEvent;
+
+    // Prevent scrolling on mobile when drawing
+    if ('touches' in e) {
+      e.preventDefault();
+    }
+
+    const coords = getCoords(e);
+    if (!coords) return;
+
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
+
     if (ctx && prevPosRef.current) {
       const drawData: DrawData = {
         x0: prevPosRef.current.x,
         y0: prevPosRef.current.y,
-        x1: offsetX,
-        y1: offsetY,
+        x1: coords.offsetX,
+        y1: coords.offsetY,
         color: color,
         lineWidth: lineWidth,
-        userName,
-        isNewStroke: isFirstDrawOfStroke.current,
       };
 
+      // 1. Draw on the local canvas immediately
       drawLine(ctx, drawData.x0, drawData.y0, drawData.x1, drawData.y1, drawData.color, drawData.lineWidth);
 
-      // Show label locally for the user's own stroke
-      if (isFirstDrawOfStroke.current) {
-        setLabels(prev => [
-          ...prev,
-          { x: drawData.x0, y: drawData.y0, userName, timestamp: Date.now() }
-        ]);
-        isFirstDrawOfStroke.current = false;
-      }
-
-      // Emit the drawing event to the server to be broadcasted to others
+      // 2. Emit the drawing event
       if (socketRef.current) {
         socketRef.current.emit('drawing', drawData);
       }
 
-      prevPosRef.current = { x: offsetX, y: offsetY };
+      // 3. Update the previous position
+      prevPosRef.current = { x: coords.offsetX, y: coords.offsetY };
     }
   };
 
-  // Event handler for when the mouse button is released
+  // // Event handler for when the mouse button is released
+  // const stopDrawing = () => {
+  //   setIsDrawing(false);
+  //   prevPosRef.current = null;
+
+  //   // After drawing, we send the entire canvas state to the server for persistence.
+  //   if (socketRef.current && canvasRef.current) {
+  //     const canvasState = canvasRef.current.toDataURL(); // Converts canvas to Base64 image string
+  //     socketRef.current.emit('saveCanvasState', canvasState);
+  //   }
+  // };
+
+  // stopDrawing remains the same, but you need to call it from onTouchEnd
   const stopDrawing = () => {
     setIsDrawing(false);
     prevPosRef.current = null;
 
-    // After drawing, we send the entire canvas state to the server for persistence.
+    // After drawing, send the entire canvas state to the server for persistence.
     if (socketRef.current && canvasRef.current) {
-        const canvasState = canvasRef.current.toDataURL(); // Converts canvas to Base64 image string
-        socketRef.current.emit('saveCanvasState', canvasState);
+      const canvasState = canvasRef.current.toDataURL(); // Converts canvas to Base64 image string
+      socketRef.current.emit('saveCanvasState', canvasState);
     }
   };
 
@@ -239,7 +324,7 @@ const Whiteboard: React.FC<WhiteboardProps> = ({ roomId, isDarkTheme = true, use
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Tell the server to clear the canvas for everyone else
@@ -331,47 +416,53 @@ const Whiteboard: React.FC<WhiteboardProps> = ({ roomId, isDarkTheme = true, use
         </button>
 
         <div className="flex items-center gap-2">
-            <span className={`${themeClasses.text} text-xs mr-2 font-semibold`}>Color</span>
-            {colorPalette.map((c) => (
-                <button
-                key={c}
-                onClick={() => setColor(c)}
-                className={`w-6 h-6 rounded-full transition-transform duration-150 border-2 border-transparent ${color === c ? `ring-2 ring-offset-2 ${themeClasses.ringOffset} ring-white scale-110` : 'hover:scale-110'}`}
-                style={{ backgroundColor: c }}
-                />
-            ))}
+          <span className={`${themeClasses.text} text-xs mr-2 font-semibold`}>Color</span>
+          {colorPalette.map((c) => (
+            <button
+              key={c}
+              onClick={() => setColor(c)}
+              className={`w-6 h-6 rounded-full transition-transform duration-150 border-2 border-transparent ${color === c ? `ring-2 ring-offset-2 ${themeClasses.ringOffset} ring-white scale-110` : 'hover:scale-110'}`}
+              style={{ backgroundColor: c }}
+            />
+          ))}
         </div>
 
         <div className="flex items-center gap-2">
-            <span className={`${themeClasses.text} text-xs mr-2 font-semibold`}>Size</span>
-             {penSizes.map((size) => (
-                <button
-                key={size.label}
-                onClick={() => setLineWidth(size.value)}
-                className={`w-8 h-8 rounded-md transition-colors duration-150 ${themeClasses.text} font-bold text-sm flex items-center justify-center ${lineWidth === size.value ? themeClasses.buttonActive : themeClasses.button}`}
-                >
-                {size.label}
-                </button>
-            ))}
+          <span className={`${themeClasses.text} text-xs mr-2 font-semibold`}>Size</span>
+          {penSizes.map((size) => (
+            <button
+              key={size.label}
+              onClick={() => setLineWidth(size.value)}
+              className={`w-8 h-8 rounded-md transition-colors duration-150 ${themeClasses.text} font-bold text-sm flex items-center justify-center ${lineWidth === size.value ? themeClasses.buttonActive : themeClasses.button}`}
+            >
+              {size.label}
+            </button>
+          ))}
         </div>
 
         <button
-            onClick={clearCanvas}
-            className="ml-auto bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg text-sm"
+          onClick={clearCanvas}
+          className="ml-auto bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg text-sm"
         >
-            Clear
+          Clear
         </button>
       </div>
 
       {/* Canvas Drawing Area */}
       <div className={`flex-1 w-full min-h-0 overflow-hidden ${themeClasses.canvas}`} style={{ position: 'relative' }}>
         <canvas
-            ref={canvasRef}
-            onMouseDown={startDrawing}
-            onMouseMove={draw}
-            onMouseUp={stopDrawing}
-            onMouseLeave={stopDrawing} // Stop drawing if mouse leaves canvas
-            className="cursor-crosshair w-full h-full"
+          ref={canvasRef}
+          onMouseDown={startDrawing}
+          onMouseMove={draw}
+          onMouseUp={stopDrawing}
+          onMouseLeave={stopDrawing} // Stop drawing if mouse leaves canvas
+
+          // TOUCH EVENTS (NEW)
+          onTouchStart={startDrawing}
+          onTouchMove={draw}
+          onTouchEnd={stopDrawing}
+          onTouchCancel={stopDrawing} // Important for when a touch is interrupted (e.g., alert pops up)
+          className="cursor-crosshair w-full h-full"
         />
         {/* Render labels above strokes */}
         <svg
