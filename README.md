@@ -10,6 +10,32 @@ LabRooms is a collaborative workspace application designed to facilitate real-ti
 - **Room Management**: Create, join, and manage rooms with unique codes.
 - **Cloud Integration**: File uploads are stored securely using Cloudinary.
 
+---
+
+## 🏗 System Architecture
+
+LabRooms follows a **modular full-stack architecture** with a clear separation between frontend, backend, database, and cloud services.  
+This design ensures scalability, maintainability, and real-time collaboration performance.
+
+### High-Level Architecture Diagram
+
+![LabRooms Architecture](./docs/architecture.png)
+
+### Architecture Overview
+- **Frontend (React + TypeScript)**  
+  Handles user interface, real-time collaboration features, and communication with the backend.
+
+- **Backend (Node.js + Express)**  
+  Provides REST APIs for authentication, room management, file handling, and collaboration logic.
+
+- **Database (MongoDB)**  
+  Stores user data, room information, messages, and file metadata.
+
+- **Cloudinary**  
+  Used for secure cloud-based file storage and retrieval.
+
+---
+
 ## Installation
 1. Clone this repository:
    ```bash
